@@ -1,4 +1,4 @@
-install.packages("c50")
+install.packages("C50")
 library(C50)
 install.packages("caret")
 library(caret)

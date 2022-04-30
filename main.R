@@ -15,6 +15,10 @@ install.packages("rattle")
 install.packages("rpart.plot")
 install.packages("RColorBrewer")
 
+install.packages("xgboost")
+install.packages("caTools")
+install.packages("gbm")
+
 
 library(dplyr)
 library(forcats)
@@ -210,9 +214,9 @@ library(dplyr)
 library(caret)
 library(gbm)
 
-water_potability$Potability[water_potability$Potability == 1] <- 'potable'
-water_potability$Potability[water_potability$Potability == 0] <- 'notPotable'
-water_potability$Potability <- as.factor(water_potability$Potability)
+#water_potability$Potability[water_potability$Potability == 1] <- 'potable'
+#water_potability$Potability[water_potability$Potability == 0] <- 'notPotable'
+#water_potability$Potability <- as.factor(water_potability$Potability)
 
 allset = split.data(water_potability, p=0.7)
 trainset = allset$train
