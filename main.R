@@ -201,3 +201,57 @@ fancyRpartPlot(myPruned)
 testset$Prediction <- predict(myPruned, testset, type = "class")
 confusion.matrix = table(testset$Potability, testset$Prediction)
 sum(diag(confusion.matrix))/sum(confusion.matrix)
+
+
+#Gradient Boosting
+library(xgboost)
+library(caTools)
+library(dplyr)
+library(caret)
+library(gbm)
+
+water_potability$Potability[water_potability$Potability == 1] <- 'potable'
+water_potability$Potability[water_potability$Potability == 0] <- 'notPotable'
+water_potability$Potability <- as.factor(water_potability$Potability)
+
+allset = split.data(water_potability, p=0.7)
+trainset = allset$train
+testset = allset$test
+
+y_train <- as.integer(trainset$Potability) - 1 #togliamo 1 perchè xgb.DMatrix richiewde valori che partono da 0, as.integer restituisce valori che partono da 1
+y_test <- as.integer(testset$Potability) - 1
+X_train <- trainset %>% select(-Potability)
+X_test <- testset %>% select(-Potability)
+print(X_train)
+head(water_potability$Potability)
+xgb_train <- xgb.DMatrix(data = as.matrix(X_train), label = y_train)
+xgb_test <- xgb.DMatrix(data = as.matrix(X_test), label = y_test)
+
+xgb_params <- list(
+  booster = "gbtree",
+  eta = 0.3,
+  max_depth = 8,
+  gamma = 4,
+  subsample = 0.75,
+  sampling_methods = "uniform",
+  colsample_bytree = 1,
+  objective = "multi:softprob",
+  eval_metric = "mlogloss",
+  num_class = length(levels(water_potability$Potability))
+)
+xgb_model <- xgb.train(
+  params = xgb_params,
+  data = xgb_train,
+  nrounds = 5000,
+  verbose = 1,
+)#ci mette un po'
+xgb_preds <- predict(xgb_model, as.matrix(X_test), reshape = TRUE)
+xgb_preds <- as.data.frame(xgb_preds)
+
+colnames(xgb_preds) <- levels(water_potability$Potability)
+head(xgb_preds)
+xgb_preds$PredictedClass <- apply(xgb_preds, 1, function(y) colnames(xgb_preds)[which.max(y)])
+xgb_preds$ActualClass <- levels(water_potability$Potability)[y_test + 1]
+head(xgb_preds)
+accuracy <- sum(xgb_preds$PredictedClass == xgb_preds$ActualClass) / nrow(xgb_preds)
+accuracy
