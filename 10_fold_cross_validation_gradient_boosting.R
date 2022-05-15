@@ -1,7 +1,9 @@
+
 install.packages("irr")
 library(irr)
 set.seed(123)
 folds <- createFolds(water_potability$Potability, k=2)
+
 results <- lapply(folds, function(x) {
   credit_train <- water_potability[-x, ]
   credit_test <- water_potability[x, ]
@@ -28,9 +30,10 @@ results <- lapply(folds, function(x) {
   preds$ActualClass <- complete_test_set$Potability
   preds$PredictedClass <- as.factor(preds$PredictedClass)
   preds$ActualClass <- as.factor(preds$ActualClass)
-  return(preds)
+  
+  return(confusionMatrix(preds$PredictedClass, preds$ActualClass))
 })
 results
 
-#confusion.matrix = table(testset$Potability, testset$Prediction)
-confusionMatrix(results$PredictedClass, results$ActualClass)
+
+rfConfusionMatrixFinal <- results$Fold1$table + results$Fold2$table
