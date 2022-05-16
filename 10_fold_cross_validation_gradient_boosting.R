@@ -37,3 +37,27 @@ results
 
 
 rfConfusionMatrixFinal <- results$Fold1$table + results$Fold2$table
+
+#accuracy
+accuracy <- (rfConfusionMatrixFinal[1,1] + rfConfusionMatrixFinal[2,2])/(rfConfusionMatrixFinal[1,1] + 
+                                                                           rfConfusionMatrixFinal[2,2] + 
+                                                                           rfConfusionMatrixFinal[1,2] + 
+                                                                           rfConfusionMatrixFinal[2,1])
+print(accuracy)
+
+#precision
+precision <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
+                                            rfConfusionMatrixFinal[1,2])
+
+print(precision)
+
+#recall
+recall <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
+                                         rfConfusionMatrixFinal[2,1])
+
+print(recall)
+
+#f-measure
+
+f_measure <- ((2*precision*recall)/(precision + recall))
+print(f_measure)
