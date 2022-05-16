@@ -8,34 +8,79 @@ install.packages("pROC ")
 library(pROC)
 
 
-data(churn)
-churnTrain = churnTrain[,! names(churnTrain) %in% c("state", "area_code", "account_length") ]
-set.seed(2)
-ind = sample(2, nrow(churnTrain), replace = TRUE, prob=c(0.7, 0.3))
-trainset = churnTrain[ind == 1,]
-testset = churnTrain[ind == 2,]
+#data(water_potability)
+#churnTrain = churnTrain[,! names(churnTrain) %in% c("state", "area_code", "account_length") ]
+#set.seed(2)
+#ind = sample(2, nrow(churnTrain), replace = TRUE, prob=c(0.7, 0.3))
+#trainset = churnTrain[ind == 1,]
+#testset = churnTrain[ind == 2,]
+
+water_potability <- read.csv("water_potability.csv")
+
+water_potability$Potability <- as.factor(water_potability$Potability)
+print(water_potability)
+
+water_potability %>% summarise_all(~ sum(is.na(.)))
+
+#Remove NA values and substitute them with mean
+water_potability <- water_potability %>% 
+  group_by(Potability) %>%
+  mutate(across(where(is.numeric), 
+                ~if_else(is.na(.), 
+                         mean(., na.rm = T),   
+                         as.numeric(.)))) %>% 
+  ungroup()
+
+#check if there is any NA value
+water_potability %>% summarise_all(~ sum(is.na(.)))
+
+split.data = function(data, p = 0.7, s = 1){ #create function to split data
+  set.seed(s)
+  index = sample(1:dim(data)[1])
+  train = data[index[1:floor(dim(data)[1] * p)], ]
+  test = data[index[((ceiling(dim(data)[1] * p)) + 1):dim(data)[1]], ]
+  return(list(train=train, test=test))
+}
+
+allset = split.data(water_potability, p=0.7)
+trainset = allset$train
+testset = allset$test
 
 
-#SVM
-svm.model= train(churn ~ ., data = trainset, method = "svmRadial")
-svm.pred = predict(svm.model, testset[,! names(testset) %in% c("churn")])
-table(svm.pred, testset[,c("churn")])
+#train DT
+decisionTree.model <- rpart(Potability ~ Sulfate + ph, data=trainset, method="class")
+decisionTree.pred <- predict(decisionTree.model, testset, reshape = TRUE)
+table(decisionTree.pred, testset[,c("Potability")])
 
-result = confusionMatrix(svm.pred, testset[,c("churn")])
-result2 = confusionMatrix(svm.pred, testset[,c("churn")], mode = "prec_recall")
+result = confusionMatrix(decisionTree.pred, testset[,c("Potability")])
+result2 = confusionMatrix(decisionTree.pred, testset[,c("Potability")], mode = "prec_recall")
 
 
 #ROC CURVE
-svmfit=svm(churn~ ., data=trainset, prob=TRUE)
-pred=predict(svmfit,testset[, !names(testset) %in% c("churn")], probability=TRUE)
-pred.prob = attr(pred, "probabilities")
-pred.to.roc = pred.prob[, 2]
-pred.rocr = prediction(pred.to.roc, testset$churn)
-perf.rocr = performance(pred.rocr, measure = "auc", x.measure = "cutoff")
-perf.tpr.rocr = performance(pred.rocr, "tpr","fpr")
+DTfit = rpart(Potability ~ Sulfate + ph, data=trainset, method="class")
+DTfit.preds <- predict(DTfit, testset, type="prob")[, 2]
+roc_pred <- prediction(predict(DTfit, testset, type="prob")[, 2], water_potability$Potability)
+
+perf.rocr = performance(roc_pred, measure = "auc", x.measure = "cutoff")
+perf.tpr.rocr = performance(roc_pred, "tpr","fpr")
 
 plot(perf.tpr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
+#print(DTfit.roc)
+plot(DTfit.roc)
 abline(a=0, b=1)
+
+
+
+#svmfit=svm(churn~ ., data=trainset, prob=TRUE)
+#pred=predict(svmfit,testset[, !names(testset) %in% c("churn")], probability=TRUE)
+#pred.prob = attr(pred, "probabilities")
+#pred.to.roc = pred.prob[, 2]
+#pred.rocr = prediction(pred.to.roc, testset$churn)
+#perf.rocr = performance(pred.rocr, measure = "auc", x.measure = "cutoff")
+#perf.tpr.rocr = performance(pred.rocr, "tpr","fpr")
+
+#plot(perf.tpr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
+#abline(a=0, b=1)
 
 
 #optimal cutoff

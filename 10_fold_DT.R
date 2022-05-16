@@ -46,10 +46,7 @@ folds <- createFolds(water_potability$Potability, k=2) #just 2 folds
 results <- lapply(folds, function(x) {
   credit_train <- water_potability[-x, ]
   credit_test <- water_potability[x, ]
-  #complete_test_set <- credit_test
-  
-  #credit_train <- credit_train %>% select(-Potability)
-  #credit_test <- credit_test %>% select(-Potability)
+
   credit_model <- rpart(Potability ~ Sulfate + ph, data=credit_train, method="class")
 
   preds <- predict(credit_model, credit_test, reshape = TRUE)
