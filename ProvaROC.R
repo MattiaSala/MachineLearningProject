@@ -7,13 +7,24 @@ library(ROCR)
 install.packages("pROC ")
 library(pROC)
 
+library(dplyr)
+library(forcats)
+library(ggplot2)
+library(skimr)
+library(scales)
+library(tidyverse)
+library(ggpubr)
+library(corrplot)
+library(RColorBrewer)
+library(varImp)
+library(GGally)
+library(FactoMineR) 
+library(factoextra)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
 
-#data(water_potability)
-#churnTrain = churnTrain[,! names(churnTrain) %in% c("state", "area_code", "account_length") ]
-#set.seed(2)
-#ind = sample(2, nrow(churnTrain), replace = TRUE, prob=c(0.7, 0.3))
-#trainset = churnTrain[ind == 1,]
-#testset = churnTrain[ind == 2,]
 
 water_potability <- read.csv("water_potability.csv")
 
@@ -48,39 +59,19 @@ testset = allset$test
 
 
 #train DT
-decisionTree.model <- rpart(Potability ~ Sulfate + ph, data=trainset, method="class")
-decisionTree.pred <- predict(decisionTree.model, testset, reshape = TRUE)
-table(decisionTree.pred, testset[,c("Potability")])
+DT.model <- rpart(Potability ~ Sulfate + ph, data=trainset, method="class")
+DT.pred <- predict(DT.model, testset, type="prob")
+#pred.prob = attr(DT.pred, "probabilities") #Obtain the probability of labels with “yes” ("1"):
+pred.to.roc = DT.pred[, 2]#pred.prob[, 2] #prendo le probabilità di 1
 
-result = confusionMatrix(decisionTree.pred, testset[,c("Potability")])
-result2 = confusionMatrix(decisionTree.pred, testset[,c("Potability")], mode = "prec_recall")
+pred.rocr = prediction(pred.to.roc, testset$Potability) #Use the prediction function to generate a prediction result
 
-
-#ROC CURVE
-DTfit = rpart(Potability ~ Sulfate + ph, data=trainset, method="class")
-DTfit.preds <- predict(DTfit, testset, type="prob")[, 2]
-roc_pred <- prediction(predict(DTfit, testset, type="prob")[, 2], water_potability$Potability)
-
-perf.rocr = performance(roc_pred, measure = "auc", x.measure = "cutoff")
-perf.tpr.rocr = performance(roc_pred, "tpr","fpr")
+perf.rocr = performance(pred.rocr, measure = "auc", x.measure = "cutoff")
+perf.tpr.rocr = performance(pred.rocr, "tpr","fpr")
 
 plot(perf.tpr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
-#print(DTfit.roc)
-plot(DTfit.roc)
-abline(a=0, b=1)
 
-
-
-#svmfit=svm(churn~ ., data=trainset, prob=TRUE)
-#pred=predict(svmfit,testset[, !names(testset) %in% c("churn")], probability=TRUE)
-#pred.prob = attr(pred, "probabilities")
-#pred.to.roc = pred.prob[, 2]
-#pred.rocr = prediction(pred.to.roc, testset$churn)
-#perf.rocr = performance(pred.rocr, measure = "auc", x.measure = "cutoff")
-#perf.tpr.rocr = performance(pred.rocr, "tpr","fpr")
-
-#plot(perf.tpr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
-#abline(a=0, b=1)
+abline(a=0, b=1) #random classifier
 
 
 #optimal cutoff
