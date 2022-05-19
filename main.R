@@ -232,24 +232,38 @@ xgb_train <- xgb.DMatrix(data = as.matrix(X_train), label = y_train)
 xgb_test <- xgb.DMatrix(data = as.matrix(X_test), label = y_test)
 
 xgb_params <- list(
-  booster = "gbtree",
-  eta = 0.3,
-  max_depth = 8,
-  gamma = 4,
-  subsample = 0.75,
-  sampling_methods = "uniform",
-  colsample_bytree = 1,
-  objective = "multi:softprob",
-  eval_metric = "mlogloss",
-  num_class = length(levels(water_potability$Potability))
-)
+  booster = "gbtree", 
+  objective = "multi:softprob", 
+  eta=0.3, 
+  gamma=0, 
+  max_depth=6, 
+  num_class = length(levels(water_potability$Potability)), 
+  min_child_weight=1, 
+  subsample=1, 
+  colsample_bytree=1)
+
+#printa il valore ideale per nround con  parametri default
+xgbcv <- xgb.cv( 
+  params = xgb_params, 
+  data = xgb_train, 
+  nrounds = 100, 
+  nfold = 5, 
+  showsd = T, 
+  stratified = T, 
+  print_every_n = 10, 
+  early_stopping_rounds = 20, 
+  maximize = F)
+
+#valore ideale 23
 xgb_model <- xgb.train(
   params = xgb_params,
   data = xgb_train,
-  nrounds = 5000,
+  nrounds = 23,
   verbose = 1,
-)#ci mette un po'
+)
+
 xgb_preds <- predict(xgb_model, as.matrix(X_test), reshape = TRUE)
+
 xgb_preds <- as.data.frame(xgb_preds)
 
 colnames(xgb_preds) <- levels(water_potability$Potability)
@@ -257,5 +271,9 @@ head(xgb_preds)
 xgb_preds$PredictedClass <- apply(xgb_preds, 1, function(y) colnames(xgb_preds)[which.max(y)])
 xgb_preds$ActualClass <- levels(water_potability$Potability)[y_test + 1]
 head(xgb_preds)
-accuracy <- sum(xgb_preds$PredictedClass == xgb_preds$ActualClass) / nrow(xgb_preds)
-accuracy
+
+confusionMatrix(as.factor(xgb_preds$PredictedClass), as.factor(xgb_preds$ActualClass))
+
+#view variable importance plot
+mat <- xgb.importance (feature_names = colnames(xgb_train),model = xgb_model)
+xgb.plot.importance (importance_matrix = mat[1:20]) 
