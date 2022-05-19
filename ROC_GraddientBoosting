@@ -1,0 +1,169 @@
+install.packages("C50")
+library(C50)
+install.packages("caret")
+library(caret)
+install.packages("ROCR")
+library(ROCR)
+install.packages("pROC")
+library(pROC)
+
+library(dplyr)
+library(forcats)
+library(ggplot2)
+library(skimr)
+library(scales)
+library(tidyverse)
+library(ggpubr)
+library(corrplot)
+library(RColorBrewer)
+library(varImp)
+library(GGally)
+library(FactoMineR) 
+library(factoextra)
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+library(xgboost)
+library(caTools)
+library(dplyr)
+library(caret)
+library(gbm)
+
+
+water_potability <- read.csv("water_potability.csv")
+
+water_potability$Potability[water_potability$Potability == 1] <- 'potable'
+water_potability$Potability[water_potability$Potability == 0] <- 'notPotable'
+
+water_potability$Potability <- as.factor(water_potability$Potability)
+print(water_potability)
+
+water_potability %>% summarise_all(~ sum(is.na(.)))
+
+#Remove NA values and substitute them with mean
+water_potability <- water_potability %>% 
+  group_by(Potability) %>%
+  mutate(across(where(is.numeric), 
+                ~if_else(is.na(.), 
+                         mean(., na.rm = T),   
+                         as.numeric(.)))) %>% 
+  ungroup()
+
+#check if there is any NA value
+water_potability %>% summarise_all(~ sum(is.na(.)))
+
+split.data = function(data, p = 0.7, s = 1){ #create function to split data
+  set.seed(s)
+  index = sample(1:dim(data)[1])
+  train = data[index[1:floor(dim(data)[1] * p)], ]
+  test = data[index[((ceiling(dim(data)[1] * p)) + 1):dim(data)[1]], ]
+  return(list(train=train, test=test))
+}
+
+allset = split.data(water_potability, p=0.7)
+trainset = allset$train
+testset = allset$test
+
+y_train <- as.integer(trainset$Potability) - 1 #togliamo 1 perchè xgb.DMatrix richiewde valori che partono da 0, as.integer restituisce valori che partono da 1
+y_test <- as.integer(testset$Potability) - 1
+X_train <- trainset %>% select(-Potability)
+X_test <- testset %>% select(-Potability)
+
+xgb_train <- xgb.DMatrix(data = as.matrix(X_train), label = y_train)
+xgb_test <- xgb.DMatrix(data = as.matrix(X_test), label = y_test)
+
+#default parameters
+xgb_params <- list(
+  booster = "gbtree", 
+  objective = "multi:softprob", 
+  eta=0.3, 
+  gamma=0, 
+  max_depth=6, 
+  num_class = length(levels(water_potability$Potability)), 
+  min_child_weight=1, 
+  subsample=1, 
+  colsample_bytree=1)
+
+#valore ideale 23
+GB.model <- xgb.train(
+  params = xgb_params,
+  data = xgb_train,
+  nrounds = 20,
+  verbose = 1,
+)
+
+GB.pred <- predict(GB.model, as.matrix(X_test), reshape = TRUE)
+
+#pred.prob = attr(DT.pred, "probabilities") #Obtain the probability of labels with “yes” ("1"):
+pred.to.roc = GB.pred[, 2]#pred.prob[, 2] #prendo le probabilità di 1
+
+pred.rocr = prediction(pred.to.roc, testset$Potability) #Use the prediction function to generate a prediction result
+
+perf.rocr = performance(pred.rocr, measure = "auc", x.measure = "cutoff")
+perf.tpr.rocr = performance(pred.rocr, "tpr","fpr")
+
+plot(perf.tpr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
+
+abline(a=0, b=1) #random classifier
+
+
+#optimal cutoff
+opt.cut = function(perf, pred){
+  cut.ind = mapply(FUN=function(x, y, p){
+    d = (x - 0)^2 + (y-1)^2
+    ind = which(d == min(d))
+    c(sensitivity = y[[ind]], specificity = 1-x[[ind]],
+      cutoff = p[[ind]])
+  }, perf@x.values, perf@y.values, pred@cutoffs)
+}
+
+print(opt.cut(perf.tpr.rocr, pred.rocr))
+
+
+#overall accuracy
+acc.perf = performance(pred.rocr, measure = "acc")
+plot(acc.perf)
+
+
+#maximum accuracy
+ind = which.max( slot(acc.perf, "y.values")[[1]] )
+acc = slot(acc.perf, "y.values")[[1]][ind]
+cutoff = slot(acc.perf, "x.values")[[1]][ind]
+print(c(accuracy= acc, cutoff = cutoff))
+
+
+#comparing models
+control = trainControl(method = "repeatedcv", number = 10,repeats = 3,
+                       classProbs = TRUE, summaryFunction = twoClassSummary)
+
+svm.model= train(Potability ~ ., data = trainset, method = "svmRadial", metric =
+                   "ROC", trControl = control)#train SVM
+
+xgb.model= train(Potability ~ ., data = trainset, method = "xgbTree", metric = "ROC",
+                   trControl = control) #train xgb
+
+svm.probs = predict(svm.model, testset[,! names(testset) %in% c("Potability")],type = "prob")#predictions on SVM
+xgb.probs = predict(xgb.model, testset[,! names(testset) %in% c("Potability")],type = "prob") #predictions on xgb
+
+#generate ROC for both models and plot together
+svm.ROC = roc(response = testset$Potability, predictor =svm.probs$potable,
+              levels = levels(testset$Potability))
+plot(svm.ROC,type="S", col="green")
+
+xgb.ROC = roc(response = testset$Potability, predictor =xgb.probs$potable,
+                levels = levels(testset$Potability))
+plot(xgb.ROC, add=TRUE, col="blue")
+
+
+#compare AUC
+svm.ROC
+xgb.ROC
+
+#values
+cv.values = resamples(list(svm=svm.model, xgb = xgb.model))
+summary(cv.values)
+dotplot(cv.values, metric = "ROC") 
+bwplot(cv.values, layout = c(3, 1)) 
+splom(cv.values,metric="ROC")
+cv.values$timings #time to train
