@@ -1,4 +1,3 @@
-
 install.packages("irr")
 library(irr)
 set.seed(123)
@@ -13,19 +12,31 @@ results <- lapply(folds, function(x) {
   
   credit_train <- credit_train %>% select(-Potability)
   credit_test <- credit_test %>% select(-Potability)
-  #print(credit_train)
+
   xgb_credit_train <- xgb.DMatrix(data = as.matrix(credit_train), label = y_credit_train)
+  xgb_params <- list(
+    booster = "gbtree", 
+    objective = "multi:softprob", 
+    eta=0.3, 
+    gamma=0, 
+    max_depth=6, 
+    num_class = length(levels(water_potability$Potability)), 
+    min_child_weight=1, 
+    subsample=1, 
+    colsample_bytree=1)
+  
+  #valore ideale 20
   credit_model <- xgb.train(
     params = xgb_params,
-    data = xgb_credit_train,
-    nrounds = 5000,
+    data = xgb_train,
+    nrounds = 20,
     verbose = 1,
   )
   preds <- predict(credit_model, as.matrix(credit_test), reshape = TRUE)
   preds <- as.data.frame(preds)
-  #return(data.frame(preds, real =  levels(water_potability$Potability)[y_credit_test + 1]))
+  
   colnames(preds) <- levels(water_potability$Potability)
-
+  
   preds$PredictedClass <- apply(preds, 1, function(y) colnames(preds)[which.max(y)])
   preds$ActualClass <- complete_test_set$Potability
   preds$PredictedClass <- as.factor(preds$PredictedClass)
