@@ -137,19 +137,19 @@ print(c(accuracy= acc, cutoff = cutoff))
 control = trainControl(method = "repeatedcv", number = 10,repeats = 3,
                        classProbs = TRUE, summaryFunction = twoClassSummary)
 
-svm.model= train(Potability ~ ., data = trainset, method = "svmRadial", metric =
-                   "ROC", trControl = control)#train SVM
+dt.model= train(Potability ~ ., data = trainset, method = "rpart", metric =
+                   "ROC", trControl = control)#train DT
 
 xgb.model= train(Potability ~ ., data = trainset, method = "xgbTree", metric = "ROC",
                    trControl = control) #train xgb
 
-svm.probs = predict(svm.model, testset[,! names(testset) %in% c("Potability")],type = "prob")#predictions on SVM
+dt.probs = predict(dt.model, testset[,! names(testset) %in% c("Potability")],type = "prob")#predictions on DT
 xgb.probs = predict(xgb.model, testset[,! names(testset) %in% c("Potability")],type = "prob") #predictions on xgb
 
 #generate ROC for both models and plot together
-svm.ROC = roc(response = testset$Potability, predictor =svm.probs$potable,
+dt.ROC = roc(response = testset$Potability, predictor =dt.probs$potable,
               levels = levels(testset$Potability))
-plot(svm.ROC,type="S", col="green")
+plot(dt.ROC,type="S", col="green")
 
 xgb.ROC = roc(response = testset$Potability, predictor =xgb.probs$potable,
                 levels = levels(testset$Potability))
@@ -157,11 +157,11 @@ plot(xgb.ROC, add=TRUE, col="blue")
 
 
 #compare AUC
-svm.ROC
+dt.ROC
 xgb.ROC
 
 #values
-cv.values = resamples(list(svm=svm.model, xgb = xgb.model))
+cv.values = resamples(list(dt = dt.model, xgb = xgb.model))
 summary(cv.values)
 dotplot(cv.values, metric = "ROC") 
 bwplot(cv.values, layout = c(3, 1)) 
