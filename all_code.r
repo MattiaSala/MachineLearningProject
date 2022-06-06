@@ -72,6 +72,108 @@ water_potability <- water_potability %>%
 
 #check if there is any NA value
 water_potability %>% summarise_all(~ sum(is.na(.)))
+
+#check outliers
+outliers <- water_potability %>% 
+  select(-Potability)
+outliers[] <- lapply(outliers, function(x){
+  qq <- quantile(x, c(0.25, 0.75), na.rm = TRUE)
+  is.na(x) <-  x < (qq[1] -(3*(qq[2]-qq[1]))) | x > (qq[2]+(3*(qq[2]-qq[1])))
+  x
+})
+outliers %>% summarise_all(~ sum(is.na(.)))
+
+outliers <- outliers %>% 
+  mutate(across(where(is.numeric), 
+                ~if_else(is.na(.), 
+                         mean(., na.rm = T),   
+                         as.numeric(.)))) %>% 
+  ungroup()
+outliers %>% summarise_all(~ sum(is.na(.)))
+
+outliers$Potability <- water_potability$Potability
+water_potability <- outliers
+
+water_potability %>%
+  pivot_longer(cols = -Potability, names_to = "feature") %>%
+  ggplot(aes(x = feature, y = value)) +
+  geom_jitter(aes(y = value, col = Potability), alpha = 0.1) +
+  geom_boxplot(aes(fill = Potability)) +
+  facet_wrap(vars(feature), ncol = 3, scales = "free") +
+  scale_color_manual(values = c("#E4652E", "#0E8A41")) +
+  scale_fill_manual(values = c("#E4652E", "#0E8A41")) +
+  theme(
+    legend.position = "right",
+    strip.background = element_rect(fill = "#0B2D5B"),
+    strip.text = element_text(color = "white", face = "bold", size = 8)
+  ) +
+  labs(
+    title = "Valori anomali",
+    caption = "Data source: Kaggle.com, Water Quality",
+    x = NULL,
+    y = NULL,
+    fill = NULL,
+    color = NULL
+  )
+
+p1 <- ggplot(water_potability, aes(ph, color = as.factor(Potability)))+
+  geom_histogram(bins = 30, fill = "white") +
+  labs(x = "pH", y = "Count", col = "Potability") +
+  theme_bw() + 
+  theme(legend.position = "bottom")+
+  labs(title = "pH")
+p2 <- ggplot(water_potability, aes(Hardness, color = as.factor(Potability)))+
+  geom_histogram(bins = 30, fill = "white") +
+  labs(x = "Hardness", y = "Count", col = "Potability") +
+  theme_bw() + 
+  theme(legend.position = "bottom")+ 
+  labs(title = "Hardness")
+p3 <- ggplot(water_potability, aes(Solids, color = as.factor(Potability)))+
+  geom_histogram(bins = 30, fill = "white") +
+  labs(x = "Solids", y = "Count", col = "Potability") +
+  theme_bw() + 
+  theme(legend.position = "bottom") + 
+  labs(title = "Solids")
+p4 <- ggplot(water_potability, aes(Chloramines, color = as.factor(Potability)))+
+  geom_histogram(bins = 30, fill = "white") +
+  labs(x = "Chloramines", y = "Count", col = "Potability") +
+  theme_bw() + 
+  theme(legend.position = "bottom") + 
+  labs(title = "Chloramines")
+p5 <- ggplot(water_potability, aes(Sulfate, color = as.factor(Potability)))+
+  geom_histogram(bins = 30, fill = "white") +
+  labs(x = "Sulfate", y = "Count", col = "Potability") +
+  theme_bw() + 
+  theme(legend.position = "bottom") + 
+  labs(title = "Sulfate")
+p6 <- ggplot(water_potability, aes(Conductivity, color = as.factor(Potability)))+
+  geom_histogram(bins = 30, fill = "white") +
+  labs(x = "Conductivity", y = "Count", col = "Potability") +
+  theme_bw() + 
+  theme(legend.position = "bottom") + 
+  labs(title = "Conductivity")
+p7 <- ggplot(water_potability, aes(Organic_carbon, color = as.factor(Potability)))+
+  geom_histogram(bins = 30, fill = "white") +
+  labs(x = "Organic Carbon", y = "Count", col = "Potability") +
+  theme_bw() + 
+  theme(legend.position = "bottom") + 
+  labs(title = "Organic Carbon")
+p8 <- ggplot(water_potability, aes(Trihalomethanes, color = as.factor(Potability)))+
+  geom_histogram(bins = 30, fill = "white") +
+  labs(x = "Trihalomethanes", y = "Count", col = "Potability") +
+  theme_bw() + 
+  theme(legend.position = "bottom") + 
+  labs(title = "Trihalomethanes")
+p9 <- ggplot(water_potability, aes(Turbidity, color = as.factor(Potability)))+
+  geom_histogram(bins = 30, fill = "white") +
+  labs(x = "Turbidity", y = "Count", col = "Potability") +
+  theme_bw() + 
+  theme(legend.position = "bottom") + 
+  labs(title = "Turbidity")
+figure <- ggarrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, nrow = 3, ncol = 3, labels = "AUTO")
+
+figure
+
 #--------------------------------------------------------------
 
 
