@@ -83,6 +83,7 @@ outliers[] <- lapply(outliers, function(x){
 })
 outliers %>% summarise_all(~ sum(is.na(.)))
 
+#replace outliers with mean
 outliers <- outliers %>% 
   mutate(across(where(is.numeric), 
                 ~if_else(is.na(.), 
@@ -94,6 +95,7 @@ outliers %>% summarise_all(~ sum(is.na(.)))
 outliers$Potability <- water_potability$Potability
 water_potability <- outliers
 
+#print plot to cheeck ouliers
 water_potability %>%
   pivot_longer(cols = -Potability, names_to = "feature") %>%
   ggplot(aes(x = feature, y = value)) +
@@ -261,7 +263,7 @@ xgb_params <- list(
   subsample=1, 
   colsample_bytree=1)
 
-#printa il valore ideale per nround con  parametri default
+#print best nround params
 xgbcv <- xgb.cv( 
   params = xgb_params, 
   data = xgb_train, 
@@ -273,7 +275,7 @@ xgbcv <- xgb.cv(
   early_stopping_rounds = 20, 
   maximize = F)
 
-#valore ideale 20
+#best nround = 20
 xgb_model <- xgb.train(
   params = xgb_params,
   data = xgb_train,
@@ -281,6 +283,7 @@ xgb_model <- xgb.train(
   verbose = 1,
 )
 
+#predict
 xgb_preds <- predict(xgb_model, as.matrix(X_test), reshape = TRUE)
 
 xgb_preds <- as.data.frame(xgb_preds)
@@ -302,7 +305,7 @@ xgb.plot.importance (importance_matrix = mat[1:20])
 #------------------------------  10 FOLD CROSS VALIDATION - DECISION TREE  ---------------------------------
 
 set.seed(123)
-folds <- createFolds(water_potability$Potability, k=10) #just 2 folds
+folds <- createFolds(water_potability$Potability, k=10)
 
 results <- lapply(folds, function(x) {
   credit_train <- water_potability[-x, ]
@@ -324,7 +327,16 @@ results <- lapply(folds, function(x) {
 results
 
 
-rfConfusionMatrixFinal <- results$Fold1$table + results$Fold2$table
+rfConfusionMatrixFinal <- results$Fold01$table + 
+  results$Fold02$table + 
+  results$Fold03$table + 
+  results$Fold04$table + 
+  results$Fold05$table + 
+  results$Fold06$table + 
+  results$Fold07$table + 
+  results$Fold08$table + 
+  results$Fold09$table + 
+  results$Fold10$table
 
 #accuracy
 accuracy <- (rfConfusionMatrixFinal[1,1] + rfConfusionMatrixFinal[2,2])/(rfConfusionMatrixFinal[1,1] + 
@@ -357,35 +369,23 @@ set.seed(123)
 folds <- createFolds(water_potability$Potability, k=10)
 
 results <- lapply(folds, function(x) {
-  credit_train <- water_potability[-x, ]
-  credit_test <- water_potability[x, ]
-  y_credit_train <- as.integer(credit_train$Potability) - 1 #togliamo 1 perchè xgb.DMatrix richiewde valori che partono da 0, as.integer restituisce valori che partono da 1
-  y_credit_test <- as.integer(credit_test$Potability) - 1
-  complete_test_set <- credit_test
+  fold_train <- water_potability[-x, ]
+  fold_test <- water_potability[x, ]
+  y_fold_train <- as.integer(fold_train$Potability) - 1 
+  complete_test_set <- fold_test
   
-  credit_train <- credit_train %>% select(-Potability)
-  credit_test <- credit_test %>% select(-Potability)
-
-  xgb_credit_train <- xgb.DMatrix(data = as.matrix(credit_train), label = y_credit_train)
-  xgb_params <- list(
-    booster = "gbtree", 
-    objective = "multi:softprob", 
-    eta=0.3, 
-    gamma=0, 
-    max_depth=6, 
-    num_class = length(levels(water_potability$Potability)), 
-    min_child_weight=1, 
-    subsample=1, 
-    colsample_bytree=1)
+  fold_train <- fold_train %>% select(-Potability)
+  fold_test <- fold_test %>% select(-Potability)
   
-  #valore ideale 20
+  xgb_fold_train <- xgb.DMatrix(data = as.matrix(fold_train), label = y_fold_train)
+  
   credit_model <- xgb.train(
     params = xgb_params,
-    data = xgb_train,
+    data = xgb_fold_train,
     nrounds = 20,
     verbose = 1,
   )
-  preds <- predict(credit_model, as.matrix(credit_test), reshape = TRUE)
+  preds <- predict(credit_model, as.matrix(fold_test), reshape = TRUE)
   preds <- as.data.frame(preds)
   
   colnames(preds) <- levels(water_potability$Potability)
@@ -399,8 +399,17 @@ results <- lapply(folds, function(x) {
 })
 results
 
-
-rfConfusionMatrixFinal <- results$Fold1$table + results$Fold2$table
+#final confusion matrix
+rfConfusionMatrixFinal <- results$Fold01$table + 
+  results$Fold02$table + 
+  results$Fold03$table + 
+  results$Fold04$table + 
+  results$Fold05$table + 
+  results$Fold06$table + 
+  results$Fold07$table + 
+  results$Fold08$table + 
+  results$Fold09$table + 
+  results$Fold10$table
 
 #accuracy
 accuracy <- (rfConfusionMatrixFinal[1,1] + rfConfusionMatrixFinal[2,2])/(rfConfusionMatrixFinal[1,1] + 
@@ -427,7 +436,7 @@ print(f_measure)
 
 #------------------------------ROC e AUC---------------------------------
 
-y_train <- as.integer(trainset$Potability) - 1 #togliamo 1 perchè xgb.DMatrix richiewde valori che partono da 0, as.integer restituisce valori che partono da 1
+y_train <- as.integer(trainset$Potability) - 1 
 y_test <- as.integer(testset$Potability) - 1
 X_train <- trainset %>% select(-Potability)
 X_test <- testset %>% select(-Potability)
@@ -435,19 +444,7 @@ X_test <- testset %>% select(-Potability)
 xgb_train <- xgb.DMatrix(data = as.matrix(X_train), label = y_train)
 xgb_test <- xgb.DMatrix(data = as.matrix(X_test), label = y_test)
 
-#default parameters
-xgb_params <- list(
-  booster = "gbtree", 
-  objective = "multi:softprob", 
-  eta=0.3, 
-  gamma=0, 
-  max_depth=6, 
-  num_class = length(levels(water_potability$Potability)), 
-  min_child_weight=1, 
-  subsample=1, 
-  colsample_bytree=1)
-
-#valore ideale 23
+#train Gradient boosting
 GB.model <- xgb.train(
   params = xgb_params,
   data = xgb_train,
@@ -457,8 +454,7 @@ GB.model <- xgb.train(
 
 GB.pred <- predict(GB.model, as.matrix(X_test), reshape = TRUE)
 
-#pred.prob = attr(DT.pred, "probabilities") #Obtain the probability of labels with “yes” ("1"):
-pred.to.roc = GB.pred[, 2]#pred.prob[, 2] #prendo le probabilità di 1
+pred.to.roc = GB.pred[, 2]
 
 pred.rocr = prediction(pred.to.roc, testset$Potability) #Use the prediction function to generate a prediction result
 
@@ -499,6 +495,17 @@ print(c(accuracy= acc, cutoff = cutoff))
 control = trainControl(method = "repeatedcv", number = 10,repeats = 3,
                        classProbs = TRUE, summaryFunction = twoClassSummary)
 
+print(water_potability)
+trainset$Potability <- as.numeric(trainset$Potability) - 1
+trainset$Potability[trainset$Potability == 1] <- 'potable'
+trainset$Potability[trainset$Potability == 0] <- 'notPotable'
+trainset$Potability <- as.factor(trainset$Potability)
+
+testset$Potability <- as.numeric(testset$Potability) - 1
+testset$Potability[testset$Potability == 1] <- 'potable'
+testset$Potability[testset$Potability == 0] <- 'notPotable'
+testset$Potability <- as.factor(testset$Potability)
+
 dt.model= train(Potability ~ ., data = trainset, method = "rpart", metric =
                    "ROC", trControl = control)#train DT
 
@@ -510,12 +517,14 @@ xgb.probs = predict(xgb.model, testset[,! names(testset) %in% c("Potability")],t
 
 #generate ROC for both models and plot together
 dt.ROC = roc(response = testset$Potability, predictor =dt.probs$potable,
-              levels = levels(testset$Potability))
-plot(dt.ROC,type="S", col="green")
+             levels = levels(testset$Potability))
+plot(dt.ROC,type="S", col="green", main=paste('ROC compare'))
 
 xgb.ROC = roc(response = testset$Potability, predictor =xgb.probs$potable,
-                levels = levels(testset$Potability))
+              levels = levels(testset$Potability))
 plot(xgb.ROC, add=TRUE, col="blue")
+legend(0.3, 0.2, legend=c("Gradient boosting", "Decision tree"),
+       col=c("blue", "green"), lty=1, cex=0.8)
 
 
 #compare AUC
