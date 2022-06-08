@@ -208,7 +208,7 @@ fviz_pca_var(pca.res , select.var = list(cos2=3))
 
 #---------------------------------------------------------------
 
-#-------------------------  DECISION TREE  -------------------------------
+#-------------------------  TRAIN&TEST and BASELINE MODEL  -------------------------------
 
 #Decision Tree (DT)
 split.data = function(data, p = 0.7, s = 1){ #create function to split data
@@ -234,6 +234,51 @@ testset$Prediction = factor(testset$Prediction)
 confusion.matrix = table(testset$Potability, testset$Prediction)
 
 #calculate accuracy
+sum(diag(confusion.matrix))/sum(confusion.matrix)
+
+#---------------------------------------------------------------
+
+#-------------------------  DECISION TREE  -------------------------------
+decisionTree <- rpart(Potability ~ Sulfate + Solids + ph, data=trainset, method="class") #Sulfate + Solids + ph
+
+fancyRpartPlot(decisionTree)
+printcp(decisionTree)
+plotcp(decisionTree)
+
+
+#accuracy with trained DT
+testset$Prediction <- predict(decisionTree, testset, type = "class")
+confusion.matrix = table(testset$Potability, testset$Prediction)
+sum(diag(confusion.matrix))/sum(confusion.matrix)
+
+#after prune of tree
+myPruned = prune(decisionTree, cp=.014) #014 #021 #solo sulfate = 018
+fancyRpartPlot(myPruned)
+
+testset$Prediction <- predict(myPruned, testset, type = "class")
+confusion.matrix = table(testset$Potability, testset$Prediction)
+sum(diag(confusion.matrix))/sum(confusion.matrix)
+
+#IG
+decisionTreeIG = rpart(Potability ~ Sulfate + ph, data=trainset, 
+                       method="class", 
+                       parms = list(split = 'information')
+)
+fancyRpartPlot(decisionTreeIG)
+printcp(decisionTreeIG)
+plotcp(decisionTreeIG)
+
+
+#accuracy with trained DTIG
+testset$Prediction <- predict(decisionTreeIG, testset, type = "class")
+confusion.matrix = table(testset$Potability, testset$Prediction)
+sum(diag(confusion.matrix))/sum(confusion.matrix)
+#after prune of tree
+myPruned = prune(decisionTreeIG, cp=.012)
+fancyRpartPlot(myPruned)
+
+testset$Prediction <- predict(myPruned, testset, type = "class")
+confusion.matrix = table(testset$Potability, testset$Prediction)
 sum(diag(confusion.matrix))/sum(confusion.matrix)
 
 #---------------------------------------------------------------
