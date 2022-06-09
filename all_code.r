@@ -383,6 +383,8 @@ rfConfusionMatrixFinal <- results$Fold01$table +
   results$Fold09$table + 
   results$Fold10$table
 
+confusionMatrix(rfConfusionMatrixFinal)
+
 #accuracy
 accuracy <- (rfConfusionMatrixFinal[1,1] + rfConfusionMatrixFinal[2,2])/(rfConfusionMatrixFinal[1,1] + 
                                                                            rfConfusionMatrixFinal[2,2] + 
@@ -456,6 +458,8 @@ rfConfusionMatrixFinal <- results$Fold01$table +
   results$Fold09$table + 
   results$Fold10$table
 
+confusionMatrix(rfConfusionMatrixFinal)
+
 #accuracy
 accuracy <- (rfConfusionMatrixFinal[1,1] + rfConfusionMatrixFinal[2,2])/(rfConfusionMatrixFinal[1,1] + 
                                                                            rfConfusionMatrixFinal[2,2] + 
@@ -510,6 +514,22 @@ plot(perf.tpr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
 
 abline(a=0, b=1) #random classifier
 
+#AUC DT
+
+DT.model <- rpart(Potability ~ Sulfate + ph, data=trainset, method="class")
+
+DT.pred <- predict(DT.model, trainset, reshape = TRUE)
+
+pred.to.roc = DT.pred[, 2]
+
+pred.rocr = prediction(pred.to.roc, testset$Potability) #Use the prediction function to generate a prediction result
+
+perf.rocr = performance(pred.rocr, measure = "auc", x.measure = "cutoff")
+perf.tpr.rocr = performance(pred.rocr, "tpr","fpr")
+
+plot(perf.tpr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
+
+abline(a=0, b=1) #random classifier
 
 #optimal cutoff
 opt.cut = function(perf, pred){
