@@ -259,28 +259,6 @@ testset$Prediction <- predict(myPruned, testset, type = "class")
 confusion.matrix = table(testset$Potability, testset$Prediction)
 sum(diag(confusion.matrix))/sum(confusion.matrix)
 
-#IG
-decisionTreeIG = rpart(Potability ~ Sulfate + ph, data=trainset, 
-                       method="class", 
-                       parms = list(split = 'information')
-)
-fancyRpartPlot(decisionTreeIG)
-printcp(decisionTreeIG)
-plotcp(decisionTreeIG)
-
-
-#accuracy with trained DTIG
-testset$Prediction <- predict(decisionTreeIG, testset, type = "class")
-confusion.matrix = table(testset$Potability, testset$Prediction)
-sum(diag(confusion.matrix))/sum(confusion.matrix)
-#after prune of tree
-myPruned = prune(decisionTreeIG, cp=.012)
-fancyRpartPlot(myPruned)
-
-testset$Prediction <- predict(myPruned, testset, type = "class")
-confusion.matrix = table(testset$Potability, testset$Prediction)
-sum(diag(confusion.matrix))/sum(confusion.matrix)
-
 #---------------------------------------------------------------
 
 #-------------------------  GRADIENT BOOSTING  -------------------------------
