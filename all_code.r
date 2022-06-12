@@ -486,9 +486,11 @@ pred.to.roc = GB.pred[, 2]
 pred.rocr = prediction(pred.to.roc, testset$Potability) #Use the prediction function to generate a prediction result
 
 perf.rocr = performance(pred.rocr, measure = "auc", x.measure = "cutoff")
-perf.tpr.rocr = performance(pred.rocr, "tpr","fpr")
+perf.tpr.rocr = performance(pred.rocr, "tpr","fpr")#true positive rate
+perf.tnr.rocr = performance(pred.rocr, "tnr","fnr") #true negative rate
 
 plot(perf.tpr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
+plot(perf.tnr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
 
 abline(a=0, b=1) #random classifier
 
@@ -504,8 +506,10 @@ pred.rocr = prediction(pred.to.roc, testset$Potability) #Use the prediction func
 
 perf.rocr = performance(pred.rocr, measure = "auc", x.measure = "cutoff")
 perf.tpr.rocr = performance(pred.rocr, "tpr","fpr")
+perf.tnr.rocr = performance(pred.rocr, "tnr","fnr") #true negative rate
 
 plot(perf.tpr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
+plot(perf.tnr.rocr, colorize=T,main=paste("AUC:",(perf.rocr@y.values)))
 
 abline(a=0, b=1) #random classifier
 
