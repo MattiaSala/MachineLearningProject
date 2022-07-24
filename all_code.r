@@ -22,6 +22,8 @@ install.packages("C50")
 install.packages("caret")
 install.packages("ROCR")
 install.packages("pROC")
+install.packages("psych")
+install.packages("pca3d ")
 
 library(dplyr)
 library(forcats)
@@ -49,6 +51,9 @@ library(C50)
 library(caret)
 library(ROCR)
 library(pROC)
+library(psych)
+library(tidyverse)
+library(pca3d)
 
 #-------------------  DATASET EXPLORATION ---------------------------
 
@@ -60,6 +65,12 @@ water_potability$Potability <- as.factor(water_potability$Potability)
 print(water_potability)
 
 water_potability %>% summarise_all(~ sum(is.na(.)))
+
+#correlation between attributes
+pairs.panels(water_potability[1:9],
+             gap=0,
+             bg=c("red", "blue")[water_potability[1:10]$Potability],
+             pch=21)
 
 #Remove NA values and substitute them with mean
 water_potability <- water_potability %>% 
@@ -198,6 +209,7 @@ print(var$contrib)
 ind <- get_pca_ind(pca.res)
 fviz_pca_ind(pca.res)
 
+#plot individuals
 fviz_pca_ind(pca.res, col.ind = "cos2",
              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
                                 repel = TRUE # Avoid text overlapping (slow if many points)
@@ -205,7 +217,11 @@ fviz_pca_ind(pca.res, col.ind = "cos2",
 
 name <- list(c("Solids","Sulfate", "ph"))
 fviz_pca_var(pca.res , select.var = list(cos2=3))
+names(pca.res)
+summary(pca.res)
 
+pc <- prcomp(water_potability[1:9], center=TRUE, scale. = TRUE)
+biplot(pc, choices = 1:2, scale = 1, pc.biplot = TRUE)
 #---------------------------------------------------------------
 
 #-------------------------  TRAIN&TEST and BASELINE MODEL  -------------------------------
