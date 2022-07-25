@@ -53,7 +53,6 @@ library(ROCR)
 library(pROC)
 library(psych)
 library(tidyverse)
-library(pca3d)
 
 #-------------------  DATASET EXPLORATION ---------------------------
 
@@ -581,7 +580,7 @@ xgb.probs = predict(xgb.model, testset[,! names(testset) %in% c("Potability")],t
 #generate ROC for both models and plot together
 dt.ROC = roc(response = testset$Potability, predictor =dt.probs$potable,
              levels = levels(testset$Potability))
-plot(dt.ROC,type="S", col="green", main=paste('ROC compare'))
+plot(dt.ROC, type="l",col="green", main=paste('ROC compare'))
 
 xgb.ROC = roc(response = testset$Potability, predictor =xgb.probs$potable,
               levels = levels(testset$Potability))
