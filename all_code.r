@@ -386,20 +386,26 @@ accuracy <- (rfConfusionMatrixFinal[1,1] + rfConfusionMatrixFinal[2,2])/(rfConfu
 print(accuracy)
 
 #precision
-precision <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
-                                            rfConfusionMatrixFinal[1,2])
-
-print(precision)
+precision_0 <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
+                                              rfConfusionMatrixFinal[1,2])
+precision_1 <- rfConfusionMatrixFinal[2,2]/(rfConfusionMatrixFinal[2,1] +
+                                              rfConfusionMatrixFinal[2,2])
+print(precision_0)
+print(precision_1)
 
 #recall
-recall <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
-                                            rfConfusionMatrixFinal[2,1])
-
-print(recall)
+recall_0 <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
+                                           rfConfusionMatrixFinal[2,1])
+recall_1 <- rfConfusionMatrixFinal[2,2]/(rfConfusionMatrixFinal[2,2] +
+                                           rfConfusionMatrixFinal[1,2])
+print(recall_0)
+print(recall_1)
 
 #f-measure
-f_measure <- ((2*precision*recall)/(precision + recall))
-print(f_measure)
+f_measure_0 <- ((2*precision_0*recall_0)/(precision_0 + recall_0))
+f_measure_1 <- ((2*precision_1*recall_1)/(precision_1 + recall_1))
+print(f_measure_0)
+print(f_measure_1)
 
 #---------------------------------------------------------------
 
@@ -461,18 +467,26 @@ accuracy <- (rfConfusionMatrixFinal[1,1] + rfConfusionMatrixFinal[2,2])/(rfConfu
 print(accuracy)
 
 #precision
-precision <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
+precision_0 <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
                                             rfConfusionMatrixFinal[1,2])
-print(precision)
+precision_1 <- rfConfusionMatrixFinal[2,2]/(rfConfusionMatrixFinal[2,1] +
+                                            rfConfusionMatrixFinal[2,2])
+print(precision_0)
+print(precision_1)
 
 #recall
-recall <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
+recall_0 <- rfConfusionMatrixFinal[1,1]/(rfConfusionMatrixFinal[1,1] +
                                          rfConfusionMatrixFinal[2,1])
-print(recall)
+recall_1 <- rfConfusionMatrixFinal[2,2]/(rfConfusionMatrixFinal[2,2] +
+                                         rfConfusionMatrixFinal[1,2])
+print(recall_0)
+print(recall_1)
 
 #f-measure
-f_measure <- ((2*precision*recall)/(precision + recall))
-print(f_measure)
+f_measure_0 <- ((2*precision_0*recall_0)/(precision_0 + recall_0))
+f_measure_1 <- ((2*precision_1*recall_1)/(precision_1 + recall_1))
+print(f_measure_0)
+print(f_measure_1)
 
 #----------------------------------------------------------------------------------------------
 
